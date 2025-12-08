@@ -2,16 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { 
-  ArrowLeft, 
   Search, 
   UserPlus, 
   UserCheck,
@@ -167,20 +166,12 @@ const FriendsScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center gap-4 px-4 py-6">
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-        >
-          <ArrowLeft size={20} color="#F8FAFC" />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-2xl font-bold text-foreground">Amigos</Text>
-          <Text className="text-muted-foreground">
-            {friends.length} amigo{friends.length !== 1 ? 's' : ''}
-            {pendingRequests.length > 0 && ` • ${pendingRequests.length} solicitação`}
-          </Text>
-        </View>
+      <View className="px-4 py-6">
+        <Text className="text-2xl font-bold text-foreground">Amigos</Text>
+        <Text className="text-muted-foreground">
+          {friends.length} amigo{friends.length !== 1 ? 's' : ''}
+          {pendingRequests.length > 0 && ` • ${pendingRequests.length} solicitação`}
+        </Text>
       </View>
 
       {/* Tabs */}

@@ -1,4 +1,5 @@
 import { StackNavigationProp } from '@react-navigation/stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RouteProp } from '@react-navigation/native';
 
 export type RootStackParamList = {
@@ -6,17 +7,17 @@ export type RootStackParamList = {
   Main: undefined;
 };
 
-export type MainStackParamList = {
-  Index: undefined;
+export type MainTabParamList = {
+  Home: undefined;
   Stats: undefined;
-  Profile: { username?: string };
   Friends: undefined;
+  Profile: { username?: string };
 };
 
 export type AuthNavigationProp = StackNavigationProp<RootStackParamList, 'Auth'>;
-export type MainNavigationProp = StackNavigationProp<MainStackParamList>;
+export type MainNavigationProp = BottomTabNavigationProp<MainTabParamList>;
 
-export type IndexScreenRouteProp = RouteProp<MainStackParamList, 'Index'>;
-export type StatsScreenRouteProp = RouteProp<MainStackParamList, 'Stats'>;
-export type ProfileScreenRouteProp = RouteProp<MainStackParamList, 'Profile'>;
-export type FriendsScreenRouteProp = RouteProp<MainStackParamList, 'Friends'>;
+export type HomeScreenRouteProp = RouteProp<MainTabParamList, 'Home'>;
+export type StatsScreenRouteProp = RouteProp<MainTabParamList, 'Stats'>;
+export type ProfileScreenRouteProp = RouteProp<MainTabParamList, 'Profile'>;
+export type FriendsScreenRouteProp = RouteProp<MainTabParamList, 'Friends'>;

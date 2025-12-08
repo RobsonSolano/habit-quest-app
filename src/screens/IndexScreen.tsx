@@ -2,21 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Calendar, 
-  BarChart3, 
   LogOut, 
   Sparkles, 
   Flame,
-  Users,
-  User,
 } from 'lucide-react-native';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { UserProfile } from '@/components/habits/UserProfile';
@@ -32,11 +28,9 @@ import {
   friendService,
 } from '@/lib/storage';
 import Toast from 'react-native-toast-message';
-import { MainNavigationProp } from '@/navigation/types';
 import { Card } from '@/components/ui/Card';
 
 const IndexScreen = () => {
-  const navigation = useNavigation<MainNavigationProp>();
   const { user, profile, logout } = useAuth();
   const [habits, setHabits] = useState<HabitWithCompletion[]>([]);
   const [stats, setStats] = useState<UserStatsUI>({
@@ -298,45 +292,21 @@ const IndexScreen = () => {
         <View className="mb-6">
           <View className="flex-row items-center justify-between mb-2">
             <View>
-              <Text className="text-4xl font-bold text-primary">
-                HabitQuest
-              </Text>
+              <View className="flex-row">
+                <Text className="text-4xl font-bold text-white">Habit</Text>
+                <Text className="text-4xl font-bold text-emerald-400">Quest</Text>
+              </View>
               <View className="flex-row items-center gap-2 mt-1">
                 <Calendar size={16} color="#64748B" />
                 <Text className="text-muted-foreground text-sm">{today}</Text>
               </View>
             </View>
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Friends')}
-                className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-              >
-                <Users size={20} color="#F8FAFC" />
-                {friendCount > 0 && (
-                  <View className="absolute -top-1 -right-1 bg-accent w-5 h-5 rounded-full items-center justify-center">
-                    <Text className="text-xs text-white font-bold">{friendCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Profile', {})}
-                className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-              >
-                <User size={20} color="#F8FAFC" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Stats')}
-                className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-              >
-                <BarChart3 size={20} color="#F8FAFC" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleLogout}
-                className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-              >
-                <LogOut size={20} color="#F8FAFC" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
+            >
+              <LogOut size={20} color="#F8FAFC" />
+            </TouchableOpacity>
           </View>
 
           <Text className="text-sm text-muted-foreground">

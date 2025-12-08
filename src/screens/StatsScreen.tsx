@@ -2,14 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, TrendingUp, Award, Calendar, Flame } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { TrendingUp, Award, Calendar, Flame } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { habitService, completionService, statsService, achievementService } from '@/lib/storage';
 import { Achievement } from '@/types/database';
@@ -19,7 +17,6 @@ import { Progress } from '@/components/ui/Progress';
 import { cn } from '@/lib/utils';
 
 const StatsScreen = () => {
-  const navigation = useNavigation();
   const { user } = useAuth();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [weeklyData, setWeeklyData] = useState<{ day: string; completed: number; total: number }[]>([]);
@@ -106,17 +103,9 @@ const StatsScreen = () => {
         }
       >
         {/* Header */}
-        <View className="flex-row items-center gap-4 mb-6">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-          >
-            <ArrowLeft size={20} color="#F8FAFC" />
-          </TouchableOpacity>
-          <View>
-            <Text className="text-3xl font-bold text-foreground">Estatísticas</Text>
-            <Text className="text-muted-foreground">Acompanhe seu progresso</Text>
-          </View>
+        <View className="mb-6">
+          <Text className="text-3xl font-bold text-foreground">Estatísticas</Text>
+          <Text className="text-muted-foreground">Acompanhe seu progresso</Text>
         </View>
 
         {/* Stats Overview */}
