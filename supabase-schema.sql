@@ -47,12 +47,12 @@ CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT 
   WITH CHECK (auth.uid() = id);
 
+-- Enable pg_trgm extension for fuzzy search (must be before gin_trgm_ops index)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Index for username search
 CREATE INDEX IF NOT EXISTS profiles_username_idx ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS profiles_username_search_idx ON public.profiles USING gin(username gin_trgm_ops);
-
--- Enable pg_trgm extension for fuzzy search
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- =============================================
 -- 2. HABITS TABLE

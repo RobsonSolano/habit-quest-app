@@ -17,7 +17,11 @@ export const HabitCard = ({ habit, onToggle }: HabitCardProps) => {
   const handleToggle = () => {
     if (!habit.completedToday) {
       setIsAnimating(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (e) {
+        // Haptics may not be available
+      }
       setTimeout(() => setIsAnimating(false), 500);
     }
     onToggle(habit.id);

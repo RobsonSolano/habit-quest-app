@@ -2,17 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { 
-  ArrowLeft, 
   Edit2, 
   Check, 
   X, 
@@ -22,7 +20,6 @@ import {
   UserPlus,
   UserCheck,
   Clock,
-  Settings,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService, statsService, friendService, streakService } from '@/lib/storage';
@@ -37,7 +34,6 @@ type ProfileScreenRouteProp = RouteProp<{
 }, 'Profile'>;
 
 const ProfileScreen = () => {
-  const navigation = useNavigation();
   const route = useRoute<ProfileScreenRouteProp>();
   const { user, profile: authProfile } = useAuth();
   
@@ -180,13 +176,7 @@ const ProfileScreen = () => {
   if (!profile) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-row items-center gap-4 px-4 py-6">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-          >
-            <ArrowLeft size={20} color="#F8FAFC" />
-          </TouchableOpacity>
+        <View className="px-4 py-6">
           <Text className="text-xl font-bold text-foreground">Perfil não encontrado</Text>
         </View>
       </SafeAreaView>
@@ -209,15 +199,7 @@ const ProfileScreen = () => {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 py-6">
-          <View className="flex-row items-center gap-4">
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-            >
-              <ArrowLeft size={20} color="#F8FAFC" />
-            </TouchableOpacity>
-            <Text className="text-2xl font-bold text-foreground">Perfil</Text>
-          </View>
+          <Text className="text-2xl font-bold text-foreground">Perfil</Text>
           
           {isOwnProfile && !editing && (
             <TouchableOpacity

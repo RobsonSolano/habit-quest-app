@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sparkles } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -55,9 +55,10 @@ const AuthScreen = () => {
         >
           {/* Header */}
           <View className="items-center mb-12">
-            <Text className="text-5xl font-bold text-transparent bg-gradient-to-r from-primary to-secondary mb-2">
-              HabitQuest
-            </Text>
+            <View className="flex-row">
+              <Text className="text-5xl font-bold text-white">Habit</Text>
+              <Text className="text-5xl font-bold text-emerald-400">Quest</Text>
+            </View>
             <View className="flex-row items-center gap-2">
               <Sparkles size={16} color="#8B5CF6" />
               <Text className="text-muted-foreground">
