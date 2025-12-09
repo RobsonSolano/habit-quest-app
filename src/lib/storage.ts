@@ -10,6 +10,7 @@ import {
   UserSearchResult,
   FriendWithProfile,
 } from '@/types/database';
+import { logger } from './logger';
 
 // =============================================
 // HABITS
@@ -112,6 +113,7 @@ export const completionService = {
   },
 
   async getByDate(userId: string, date: string): Promise<HabitCompletion[]> {
+    logger.log('completionService', 'getByDate called', { userId, date });
     const { data, error } = await supabase
       .from('habit_completions')
       .select('*')
@@ -119,9 +121,22 @@ export const completionService = {
       .eq('completed_date', date);
 
     if (error) {
+      logger.error('completionService', 'Error fetching completions by date', error);
       console.error('Error fetching completions by date:', error);
       return [];
     }
+    
+    logger.log('completionService', 'getByDate result', { 
+      date, 
+      count: data?.length || 0,
+      completions: data?.map(c => ({ 
+        id: c.id, 
+        habit_id: c.habit_id, 
+        completed_date: c.completed_date, 
+        completed: c.completed 
+      }))
+    });
+    
     return data || [];
   },
 
@@ -131,15 +146,29 @@ export const completionService = {
     date: string, 
     completed: boolean
   ): Promise<boolean> {
+    logger.log('completionService', 'toggle called', { 
+      userId, 
+      habitId, 
+      date, 
+      completed 
+    });
+    
     // Check if completion exists
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('habit_completions')
       .select('id')
       .eq('habit_id', habitId)
       .eq('completed_date', date)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      logger.error('completionService', 'Error checking existing completion', checkError);
+    }
+
     if (existing) {
+      logger.log('completionService', 'Updating existing completion', { 
+        completionId: existing.id 
+      });
       // Update existing
       const { error } = await supabase
         .from('habit_completions')
@@ -147,10 +176,13 @@ export const completionService = {
         .eq('id', existing.id);
 
       if (error) {
+        logger.error('completionService', 'Error updating completion', error);
         console.error('Error updating completion:', error);
         return false;
       }
+      logger.log('completionService', 'Completion updated successfully');
     } else {
+      logger.log('completionService', 'Creating new completion');
       // Create new
       const { error } = await supabase
         .from('habit_completions')
@@ -162,9 +194,11 @@ export const completionService = {
         });
 
       if (error) {
+        logger.error('completionService', 'Error creating completion', error);
         console.error('Error creating completion:', error);
         return false;
       }
+      logger.log('completionService', 'Completion created successfully');
     }
 
     return true;
@@ -293,21 +327,26 @@ export const streakService = {
     currentStreak: number;
     longestStreak: number;
   } | null> {
+    logger.log('streakService', 'check called', { userId });
     // Call the database function
     const { data, error } = await supabase
       .rpc('check_and_update_streak', { p_user_id: userId });
 
     if (error) {
+      logger.error('streakService', 'Error checking streak', error);
       console.error('Error checking streak:', error);
       return null;
     }
 
-    return {
+    const result = {
       streakBroken: data?.streak_broken || false,
       oldStreak: data?.old_streak || 0,
       currentStreak: data?.current_streak || data?.new_streak || 0,
       longestStreak: data?.longest_streak || 0,
     };
+    
+    logger.log('streakService', 'check result', result);
+    return result;
   },
 
   async getProfile(userId: string): Promise<{

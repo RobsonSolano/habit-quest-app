@@ -14,11 +14,12 @@ import {
   Sparkles, 
   Flame,
 } from 'lucide-react-native';
-import { HabitCard } from '@/components/habits/HabitCard';
+import { DeletableHabitCard } from '@/components/habits/DeletableHabitCard';
 import { UserProfile } from '@/components/habits/UserProfile';
 import { AddHabitModal, AddHabitButton } from '@/components/habits/AddHabitModal';
 import { HabitWithCompletion, UserStatsUI, mapStatsToUI } from '@/types/habit';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { 
   habitService, 
   completionService, 
@@ -27,11 +28,19 @@ import {
   streakService,
   friendService,
 } from '@/lib/storage';
-import Toast from 'react-native-toast-message';
 import { Card } from '@/components/ui/Card';
+import { analytics } from '@/lib/analytics';
+import { logger } from '@/lib/logger';
+import { showToast } from '@/lib/toast';
 
 const IndexScreen = () => {
   const { user, profile, logout } = useAuth();
+  const { 
+    onHabitCompleted, 
+    onHabitUncompleted,
+    sendLevelUpNotification,
+    sendStreakMilestoneNotification,
+  } = useNotifications();
   const [habits, setHabits] = useState<HabitWithCompletion[]>([]);
   const [stats, setStats] = useState<UserStatsUI>({
     level: 1,
@@ -47,55 +56,92 @@ const IndexScreen = () => {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      logger.warn('IndexScreen', 'loadData called without user');
+      return;
+    }
+
+    logger.log('IndexScreen', 'loadData started', { userId: user.id });
 
     try {
       // Check streak first (this may update it if broken)
+      logger.log('IndexScreen', 'Checking streak', { userId: user.id });
       const streakResult = await streakService.check(user.id);
+      logger.log('IndexScreen', 'Streak check result', streakResult);
       
       if (streakResult?.streakBroken) {
-        Toast.show({
-          type: 'error',
-          text1: '😢 Ofensiva perdida!',
-          text2: `Sua ofensiva de ${streakResult.oldStreak} dias foi zerada`,
+        logger.warn('IndexScreen', 'Streak broken', { 
+          oldStreak: streakResult.oldStreak,
+          currentStreak: streakResult.currentStreak 
         });
+        showToast('error', '😢 Ofensiva perdida!', `Sua ofensiva de ${streakResult.oldStreak} dias foi zerada`);
       }
 
       // Load habits
+      logger.log('IndexScreen', 'Loading habits', { userId: user.id });
       const userHabits = await habitService.getAll(user.id);
+      logger.log('IndexScreen', 'Habits loaded', { count: userHabits.length });
       
-      // Load today's completions
+      // Load today's completions ONLY
       const today = new Date().toISOString().split('T')[0];
+      logger.log('IndexScreen', 'Loading today completions', { date: today });
       const todayCompletions = await completionService.getByDate(user.id, today);
+      logger.log('IndexScreen', 'Today completions loaded', { 
+        count: todayCompletions.length,
+        completed: todayCompletions.filter(c => c.completed).length 
+      });
       
-      // Map habits with completion status
-      const habitsWithCompletion: HabitWithCompletion[] = userHabits.map(habit => ({
-        ...habit,
-        completedToday: todayCompletions.some(
-          c => c.habit_id === habit.id && c.completed
-        ),
-      }));
+      // Map habits with completion status (ONLY for today)
+      const habitsWithCompletion: HabitWithCompletion[] = userHabits.map(habit => {
+        const todayCompletion = todayCompletions.find(
+          c => c.habit_id === habit.id && c.completed_date === today
+        );
+        const completedToday = todayCompletion?.completed === true;
+        
+        // Log apenas se houver diferença ou problema
+        if (todayCompletion && !completedToday) {
+          logger.warn('IndexScreen', 'Completion found but not marked as completed', {
+            habitId: habit.id,
+            completionId: todayCompletion.id
+          });
+        }
+        
+        return {
+          ...habit,
+          completedToday,
+        };
+      });
       
       setHabits(habitsWithCompletion);
+      logger.log('IndexScreen', 'Habits state updated', { 
+        total: habitsWithCompletion.length,
+        completed: habitsWithCompletion.filter(h => h.completedToday).length 
+      });
 
       // Load stats
+      logger.log('IndexScreen', 'Loading stats', { userId: user.id });
       const userStats = await statsService.get(user.id);
-      setStats(mapStatsToUI(userStats));
+      const streakProfile = await streakService.getProfile(user.id);
+      logger.log('IndexScreen', 'Stats loaded', { 
+        stats: userStats,
+        streakProfile 
+      });
+      setStats(mapStatsToUI(userStats, streakProfile?.longestStreak || 0));
 
       // Load streak from profile
-      const streakProfile = await streakService.getProfile(user.id);
       setCurrentStreak(streakProfile?.currentStreak || 0);
+      logger.log('IndexScreen', 'Current streak set', { 
+        currentStreak: streakProfile?.currentStreak || 0 
+      });
 
       // Load friend count
       const count = await friendService.getFriendCount(user.id);
       setFriendCount(count);
+      logger.log('IndexScreen', 'loadData completed successfully');
     } catch (error) {
+      logger.error('IndexScreen', 'Error loading data', error);
       console.error('Error loading data:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Não foi possível carregar os dados',
-      });
+      showToast('error', 'Erro', 'Não foi possível carregar os dados');
     } finally {
       setLoading(false);
     }
@@ -112,117 +158,177 @@ const IndexScreen = () => {
   };
 
   const handleToggleHabit = async (habitId: string) => {
-    if (!user) return;
+    if (!user) {
+      logger.warn('IndexScreen', 'handleToggleHabit called without user');
+      return;
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const habit = habits.find(h => h.id === habitId);
-    if (!habit) return;
+    if (!habit) {
+      logger.warn('IndexScreen', 'Habit not found', { habitId });
+      return;
+    }
 
-    const newCompleted = !habit.completedToday;
+    // Não permitir desmarcar hábitos já completados
+    if (habit.completedToday) {
+      logger.log('IndexScreen', 'Attempted to uncomplete habit, blocked', { 
+        habitId, 
+        habitName: habit.name 
+      });
+      return;
+    }
+
+    logger.log('IndexScreen', 'Toggling habit', { 
+      habitId, 
+      habitName: habit.name,
+      currentStatus: habit.completedToday,
+      newStatus: true,
+      date: today
+    });
+
+    const newCompleted = true; // Sempre true, não permitimos desmarcar
     
-    // Optimistic update
-    setHabits(prev => prev.map(h => 
-      h.id === habitId ? { ...h, completedToday: newCompleted } : h
-    ));
+    // Optimistic update - usar setTimeout para garantir que está fora do ciclo de renderização atual
+    setTimeout(() => {
+      setHabits(prev => prev.map(h => 
+        h.id === habitId ? { ...h, completedToday: newCompleted } : h
+      ));
+    }, 0);
 
     try {
       // Toggle completion in database
+      logger.log('IndexScreen', 'Saving completion to database', {
+        userId: user.id,
+        habitId,
+        date: today,
+        completed: newCompleted
+      });
       await completionService.toggle(user.id, habitId, today, newCompleted);
+      logger.log('IndexScreen', 'Completion saved successfully');
 
-      if (newCompleted) {
-        // Add XP
-        const result = await statsService.addXP(user.id, habit.points);
-        
-        if (result) {
-          if (result.levelUp) {
-            Toast.show({
-              type: 'success',
-              text1: '🎉 Subiu de nível!',
-              text2: `Você alcançou o nível ${result.newLevel}!`,
-            });
-          } else {
-            Toast.show({
-              type: 'success',
-              text1: `✨ +${habit.points} XP`,
-              text2: `${habit.name} concluído!`,
-            });
-          }
+      // Track habit completed
+      logger.log('IndexScreen', 'Tracking habit completed', {
+        habitName: habit.name,
+        points: habit.points,
+        streak: habit.streak + 1
+      });
+      analytics.trackHabitCompleted({
+        name: habit.name,
+        points: habit.points,
+        streak: habit.streak + 1,
+      });
+      
+      // Add XP
+      logger.log('IndexScreen', 'Adding XP', { 
+        userId: user.id, 
+        points: habit.points 
+      });
+      const result = await statsService.addXP(user.id, habit.points);
+      logger.log('IndexScreen', 'XP added result', result);
+      
+      if (result) {
+        if (result.levelUp) {
+          logger.log('IndexScreen', 'Level up!', { newLevel: result.newLevel });
+          analytics.trackLevelUp(result.newLevel);
+          showToast('success', '🎉 Subiu de nível!', `Você alcançou o nível ${result.newLevel}!`);
+          // Enviar notificação de level up
+          sendLevelUpNotification(result.newLevel);
+        } else {
+          showToast('success', `✨ +${habit.points} XP`, `${habit.name} concluído!`);
         }
+      }
 
-        // Update streak
-        const newStreak = habit.streak + 1;
-        await habitService.updateStreak(habitId, newStreak);
+      // Update streak
+      const newStreak = habit.streak + 1;
+      logger.log('IndexScreen', 'Updating habit streak', { 
+        habitId, 
+        oldStreak: habit.streak, 
+        newStreak 
+      });
+      await habitService.updateStreak(habitId, newStreak);
 
-        // Update local state
+      // Update local state - usar setTimeout para garantir que está fora do ciclo de renderização atual
+      setTimeout(() => {
         setHabits(prev => prev.map(h => 
           h.id === habitId ? { ...h, streak: newStreak, completedToday: true } : h
         ));
+      }, 0);
 
-        // Check if all habits completed today
-        const allCompleted = await completionService.checkAllCompletedToday(user.id);
-        if (allCompleted) {
-          // Update streak in profile
-          const streakResult = await streakService.check(user.id);
-          if (streakResult) {
-            setCurrentStreak(streakResult.currentStreak);
-            
-            if (streakResult.currentStreak > 0 && !streakResult.streakBroken) {
-              Toast.show({
-                type: 'success',
-                text1: '🔥 Ofensiva atualizada!',
-                text2: `${streakResult.currentStreak} dias seguidos!`,
-              });
-            }
-          }
-        }
-
-        // Check achievements
-        const updatedStats = await statsService.get(user.id);
-        const updatedHabits = await habitService.getAll(user.id);
-        if (updatedStats) {
-          const unlockedAchievements = await achievementService.checkAndUnlock(
-            user.id,
-            updatedStats,
-            updatedHabits,
-            friendCount
-          );
+      // Check if all habits completed today
+      logger.log('IndexScreen', 'Checking if all habits completed today');
+      const allCompleted = await completionService.checkAllCompletedToday(user.id);
+      logger.log('IndexScreen', 'All completed check result', { allCompleted });
+      
+      if (allCompleted) {
+        logger.log('IndexScreen', 'All habits completed!');
+        analytics.trackAllHabitsCompleted();
+        // Cancelar lembretes de ofensiva (já completou tudo!)
+        onHabitCompleted();
+      }
+      
+      // SEMPRE verificar e atualizar ofensiva quando um hábito é completado
+      logger.log('IndexScreen', 'Checking and updating streak after habit completion');
+      const streakResult = await streakService.check(user.id);
+      logger.log('IndexScreen', 'Streak check after completion', streakResult);
+      
+      if (streakResult) {
+        setCurrentStreak(streakResult.currentStreak);
+        logger.log('IndexScreen', 'Current streak updated', { 
+          currentStreak: streakResult.currentStreak 
+        });
+        
+        if (streakResult.currentStreak > 0 && !streakResult.streakBroken) {
+          showToast('success', '🔥 Ofensiva atualizada!', `${streakResult.currentStreak} dias seguidos!`);
           
-          for (const achievement of unlockedAchievements) {
-            Toast.show({
-              type: 'success',
-              text1: `🏆 Conquista desbloqueada!`,
-              text2: achievement.title,
-            });
-          }
+          // Enviar notificação de marco de ofensiva (7, 14, 30, 50, 100, 365 dias)
+          sendStreakMilestoneNotification(streakResult.currentStreak);
         }
-      } else {
-        // Remove XP
-        await statsService.removeXP(user.id, habit.points);
+      }
 
-        // Update streak
-        const newStreak = Math.max(0, habit.streak - 1);
-        await habitService.updateStreak(habitId, newStreak);
-
-        setHabits(prev => prev.map(h => 
-          h.id === habitId ? { ...h, streak: newStreak, completedToday: false } : h
-        ));
+      // Check achievements
+      logger.log('IndexScreen', 'Checking achievements');
+      const updatedStats = await statsService.get(user.id);
+      const updatedHabits = await habitService.getAll(user.id);
+      if (updatedStats) {
+        const unlockedAchievements = await achievementService.checkAndUnlock(
+          user.id,
+          updatedStats,
+          updatedHabits,
+          friendCount
+        );
+        logger.log('IndexScreen', 'Achievements checked', { 
+          unlocked: unlockedAchievements.length 
+        });
+        
+          // Espaçar os toasts
+          unlockedAchievements.forEach((achievement, index) => {
+            showToast('success', '🏆 Conquista desbloqueada!', achievement.title, 200 + (index * 300));
+          });
       }
 
       // Reload stats
+      logger.log('IndexScreen', 'Reloading stats after completion');
       const refreshedStats = await statsService.get(user.id);
-      setStats(mapStatsToUI(refreshedStats));
+      const refreshedStreakProfile = await streakService.getProfile(user.id);
+      setStats(mapStatsToUI(refreshedStats, refreshedStreakProfile?.longestStreak || 0));
+      logger.log('IndexScreen', 'Stats reloaded', { 
+        stats: refreshedStats,
+        streakProfile: refreshedStreakProfile 
+      });
+
+      logger.log('IndexScreen', 'handleToggleHabit completed successfully');
 
     } catch (error) {
+      logger.error('IndexScreen', 'Error toggling habit', error);
       console.error('Error toggling habit:', error);
-      // Revert optimistic update
-      setHabits(prev => prev.map(h => 
-        h.id === habitId ? { ...h, completedToday: !newCompleted } : h
-      ));
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Não foi possível atualizar o hábito',
-      });
+      // Revert optimistic update - usar setTimeout
+      setTimeout(() => {
+        setHabits(prev => prev.map(h => 
+          h.id === habitId ? { ...h, completedToday: false } : h
+        ));
+      }, 0);
+      showToast('error', 'Erro', 'Não foi possível atualizar o hábito');
     }
   };
 
@@ -238,20 +344,41 @@ const IndexScreen = () => {
       const created = await habitService.create(user.id, newHabit);
       
       if (created) {
-        setHabits(prev => [...prev, { ...created, completedToday: false }]);
-        Toast.show({
-          type: 'success',
-          text1: 'Hábito criado!',
-          text2: `${newHabit.name} foi adicionado.`,
+        analytics.trackHabitCreated({
+          name: newHabit.name,
+          frequency: newHabit.frequency,
+          points: newHabit.points,
         });
+        setHabits(prev => [...prev, { ...created, completedToday: false }]);
+        showToast('success', 'Hábito criado!', `${newHabit.name} foi adicionado.`);
       }
     } catch (error) {
       console.error('Error adding habit:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Não foi possível criar o hábito',
-      });
+      showToast('error', 'Erro', 'Não foi possível criar o hábito');
+    }
+  };
+
+  const handleDeleteHabit = async (habitId: string) => {
+    if (!user) return;
+
+    try {
+      logger.log('IndexScreen', 'Deleting habit', { habitId });
+      const success = await habitService.delete(habitId);
+      
+      if (success) {
+        // Remover do estado local
+        setHabits(prev => prev.filter(h => h.id !== habitId));
+        showToast('success', 'Hábito deletado', 'O hábito foi removido com sucesso');
+        logger.log('IndexScreen', 'Habit deleted successfully', { habitId });
+        
+        // Recarregar dados para atualizar stats
+        await loadData();
+      } else {
+        showToast('error', 'Erro', 'Não foi possível deletar o hábito');
+      }
+    } catch (error) {
+      logger.error('IndexScreen', 'Error deleting habit', error);
+      showToast('error', 'Erro', 'Não foi possível deletar o hábito');
     }
   };
 
@@ -301,12 +428,12 @@ const IndexScreen = () => {
                 <Text className="text-muted-foreground text-sm">{today}</Text>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
-            >
-              <LogOut size={20} color="#F8FAFC" />
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleLogout}
+                className="w-12 h-12 bg-card border border-border rounded-lg items-center justify-center"
+              >
+                <LogOut size={20} color="#F8FAFC" />
+              </TouchableOpacity>
           </View>
 
           <Text className="text-sm text-muted-foreground">
@@ -371,7 +498,12 @@ const IndexScreen = () => {
             </View>
           ) : (
             habits.map((habit) => (
-              <HabitCard key={habit.id} habit={habit} onToggle={handleToggleHabit} />
+              <DeletableHabitCard 
+                key={habit.id} 
+                habit={habit} 
+                onToggle={handleToggleHabit}
+                onDelete={handleDeleteHabit}
+              />
             ))
           )}
         </View>

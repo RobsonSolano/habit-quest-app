@@ -7,14 +7,28 @@ interface CardProps extends ViewProps {
   className?: string;
 }
 
-export const Card = ({ children, className, ...props }: CardProps) => {
+export const Card = React.forwardRef<View, CardProps>(({ children, className, ...props }, ref) => {
+  // Processar className de forma segura
+  const processedClassName = React.useMemo(() => {
+    try {
+      return cn('bg-card rounded-lg border border-border p-4', className);
+    } catch (error) {
+      // Se houver erro, retornar className padrão
+      console.warn('[Card] Error processing className:', error);
+      return 'bg-card rounded-lg border border-border p-4';
+    }
+  }, [className]);
+
   return (
     <View
-      className={cn('bg-card rounded-lg border border-border p-4', className)}
+      ref={ref}
+      className={processedClassName}
       {...props}
     >
       {children}
     </View>
   );
-};
+});
+
+Card.displayName = 'Card';
 

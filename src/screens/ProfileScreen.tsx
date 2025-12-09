@@ -199,7 +199,7 @@ const ProfileScreen = () => {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 py-6">
-          <Text className="text-2xl font-bold text-foreground">Perfil</Text>
+            <Text className="text-2xl font-bold text-foreground">Perfil</Text>
           
           {isOwnProfile && !editing && (
             <TouchableOpacity

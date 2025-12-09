@@ -104,8 +104,8 @@ const StatsScreen = () => {
       >
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-3xl font-bold text-foreground">Estatísticas</Text>
-          <Text className="text-muted-foreground">Acompanhe seu progresso</Text>
+            <Text className="text-3xl font-bold text-foreground">Estatísticas</Text>
+            <Text className="text-muted-foreground">Acompanhe seu progresso</Text>
         </View>
 
         {/* Stats Overview */}
