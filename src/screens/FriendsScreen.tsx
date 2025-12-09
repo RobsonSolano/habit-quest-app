@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { 
   Search, 
   UserPlus, 
@@ -44,11 +44,15 @@ const FriendsScreen = () => {
     if (!user) return;
 
     try {
+      console.log('[FriendsScreen] Loading data for user:', user.id);
       const [friendsData, requestsData] = await Promise.all([
         friendService.getFriends(user.id),
         friendService.getPendingRequests(user.id),
       ]);
 
+      console.log('[FriendsScreen] Friends data:', friendsData.length);
+      console.log('[FriendsScreen] Pending requests:', requestsData.length);
+      
       setFriends(friendsData);
       setPendingRequests(requestsData);
     } catch (error) {
@@ -61,6 +65,15 @@ const FriendsScreen = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Reload data when screen comes into focus (e.g., after login)
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadData();
+      }
+    }, [user, loadData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

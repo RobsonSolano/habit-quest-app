@@ -138,6 +138,7 @@ const AuthScreen = () => {
                 <Input
                   label="Nome"
                   placeholder="Seu nome"
+                  className="mb-3"
                   value={signupName}
                   onChangeText={setSignupName}
                 />
@@ -146,6 +147,7 @@ const AuthScreen = () => {
                   placeholder="seu@email.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  className="mb-3"
                   value={signupEmail}
                   onChangeText={setSignupEmail}
                 />
@@ -153,6 +155,7 @@ const AuthScreen = () => {
                   label="Senha"
                   placeholder="••••••••"
                   secureTextEntry
+                  className="mb-3"
                   value={signupPassword}
                   onChangeText={setSignupPassword}
                 />

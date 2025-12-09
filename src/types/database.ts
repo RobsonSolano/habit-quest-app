@@ -186,6 +186,53 @@ export interface Database {
         }
       }
     }
+    Functions: {
+      check_and_update_streak: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          streak_broken: boolean
+          old_streak: number
+          new_streak: number
+          current_streak: number
+          longest_streak: number
+        }
+      }
+      search_users: {
+        Args: {
+          search_term: string
+          current_user_id: string
+        }
+        Returns: {
+          id: string
+          name: string
+          username: string | null
+          avatar_url: string | null
+          current_streak: number
+          level: number
+          friendship_status: 'pending' | 'accepted' | 'blocked' | null
+        }[]
+      }
+      get_public_profile: {
+        Args: {
+          p_username: string
+        }
+        Returns: {
+          id: string
+          name: string
+          username: string | null
+          avatar_url: string | null
+          bio: string | null
+          current_streak: number
+          longest_streak: number
+          level: number
+          total_points: number
+          total_habits_completed: number
+          member_since: string
+        }[]
+      }
+    }
   }
 }
 
