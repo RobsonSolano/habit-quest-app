@@ -96,7 +96,7 @@ export const DeletableHabitCard = ({ habit, onToggle, onDelete }: DeletableHabit
   };
 
   return (
-    <View className="relative mb-3">
+    <View className="relative mb-2">
       <View className="flex-row items-center gap-3">
         {/* Card do hábito */}
         <Pressable

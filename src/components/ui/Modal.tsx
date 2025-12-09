@@ -42,7 +42,7 @@ export const Modal = ({
         >
           <View
             className={cn(
-              'bg-card rounded-lg border border-border p-6 max-h-[80%]',
+              'bg-card rounded-lg border border-border p-6 max-h-[95%]',
               className
             )}
           >
@@ -68,7 +68,8 @@ export const Modal = ({
             {/* Content */}
             <ScrollView
               showsVerticalScrollIndicator={false}
-              className="max-h-96"
+              style={{ maxHeight: 650, minHeight: 300 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
             >
               {children}
             </ScrollView>

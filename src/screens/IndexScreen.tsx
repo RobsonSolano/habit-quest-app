@@ -408,15 +408,17 @@ const IndexScreen = () => {
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       <ScrollView
-        className="flex-1 px-4 py-6"
+        className="px-4 py-8"
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 0 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         {/* Header */}
-        <View className="mb-6">
+        <View className="mb-2">
           <View className="flex-row items-center justify-between mb-2">
             <View>
               <View className="flex-row">
@@ -486,7 +488,7 @@ const IndexScreen = () => {
         </View>
 
         {/* Habits List */}
-        <View className="mb-6">
+        <View className="">
           {habits.length === 0 ? (
             <View className="bg-card rounded-lg border border-border p-12 items-center">
               <Text className="text-muted-foreground mb-2 text-center">
@@ -510,7 +512,7 @@ const IndexScreen = () => {
 
         {/* Perfect Day Message */}
         {completedCount === totalCount && totalCount > 0 && (
-          <View className="bg-accent/20 border-2 border-accent rounded-lg p-6 items-center mb-6">
+          <View className="bg-accent/20 border-2 border-accent rounded-lg py-4 px-6 items-center mt-2 mb-10">
             <Text className="text-4xl mb-2">🏆</Text>
             <Text className="text-xl font-bold text-foreground mb-1">
               Dia Perfeito!

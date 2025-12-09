@@ -48,7 +48,7 @@ export const UserProfile = ({ stats }: UserProfileProps) => {
       </View>
 
       <View className="space-y-2">
-        <Progress value={progressPercentage} className="h-3" />
+        <Progress value={progressPercentage} className="h-3 mb-2" />
         <Text className="text-xs text-muted-foreground text-right">
           {stats.xpToNextLevel - stats.xp} XP para o próximo nível
         </Text>

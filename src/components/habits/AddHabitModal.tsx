@@ -59,24 +59,25 @@ export const AddHabitModal = ({ visible, onClose, onAdd }: AddHabitModalProps) =
       title="Criar Novo Hábito"
       description="Adicione um novo hábito para começar sua jornada de crescimento!"
     >
-      <View className="space-y-4">
+      <View className="space-y-2">
         {/* Name Input */}
         <Input
           label="Nome do Hábito"
           placeholder="Ex: Beber 2L de água"
           value={name}
           onChangeText={setName}
+          className="mb-3"
         />
 
         {/* Icon Selector */}
         <View>
-          <Text className="text-sm font-medium text-foreground mb-2">
+          <Text className="text-sm font-medium text-foreground mb-1">
             Ícone
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            className="flex-row gap-2"
+            className="flex-row gap-2 mb-3"
           >
             {habitIcons.map((item) => (
               <TouchableOpacity
