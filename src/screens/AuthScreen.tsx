@@ -13,9 +13,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 const AuthScreen = () => {
   const { login, signup } = useAuth();
+  const { signIn: signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const [isLogin, setIsLogin] = useState(true);
 
   // Login form
@@ -166,6 +168,25 @@ const AuthScreen = () => {
               </View>
             )}
           </Card>
+
+          {/* Google Sign-In */}
+          <View className="mb-6">
+            <View className="flex-row items-center mb-4">
+              <View className="flex-1 h-px bg-border" />
+              <Text className="mx-4 text-sm text-muted-foreground">ou</Text>
+              <View className="flex-1 h-px bg-border" />
+            </View>
+            <TouchableOpacity
+              onPress={signInWithGoogle}
+              disabled={googleLoading}
+              className="flex-row items-center justify-center gap-3 py-3 bg-white rounded-lg border border-border"
+            >
+              <Text className="text-2xl">🔵</Text>
+              <Text className="text-gray-800 font-semibold">
+                {googleLoading ? 'Carregando...' : 'Continuar com Google'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Footer */}
           <View className="items-center">

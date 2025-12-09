@@ -167,11 +167,11 @@ const FriendsScreen = () => {
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="px-4 py-6">
-        <Text className="text-2xl font-bold text-foreground">Amigos</Text>
-        <Text className="text-muted-foreground">
-          {friends.length} amigo{friends.length !== 1 ? 's' : ''}
-          {pendingRequests.length > 0 && ` • ${pendingRequests.length} solicitação`}
-        </Text>
+          <Text className="text-2xl font-bold text-foreground">Amigos</Text>
+          <Text className="text-muted-foreground">
+            {friends.length} amigo{friends.length !== 1 ? 's' : ''}
+            {pendingRequests.length > 0 && ` • ${pendingRequests.length} solicitação`}
+          </Text>
       </View>
 
       {/* Tabs */}

@@ -25,20 +25,22 @@ export interface UserStatsUI {
 }
 
 // Helper to convert DB stats to UI stats
-export const mapStatsToUI = (stats: {
-  level: number;
-  xp: number;
-  xp_to_next_level: number;
-  total_points: number;
-  longest_streak: number;
-} | null): UserStatsUI => {
+export const mapStatsToUI = (
+  stats: {
+    level: number;
+    xp: number;
+    xp_to_next_level: number;
+    total_points: number;
+  } | null,
+  longestStreak: number = 0
+): UserStatsUI => {
   if (!stats) {
     return {
       level: 1,
       xp: 0,
       xpToNextLevel: 100,
       totalPoints: 0,
-      longestStreak: 0,
+      longestStreak,
     };
   }
   return {
@@ -46,6 +48,6 @@ export const mapStatsToUI = (stats: {
     xp: stats.xp,
     xpToNextLevel: stats.xp_to_next_level,
     totalPoints: stats.total_points,
-    longestStreak: stats.longest_streak,
+    longestStreak,
   };
 };

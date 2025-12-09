@@ -1,4 +1,6 @@
 import React from 'react';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, BarChart3, Users, User } from 'lucide-react-native';
 import { MainTabParamList } from './types';
@@ -11,6 +13,17 @@ import FriendsScreen from '@/screens/FriendsScreen';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainNavigator = () => {
+  let insets;
+  try {
+    insets = useSafeAreaInsets();
+  } catch (error) {
+    console.warn('[MainNavigator] Error getting safe area insets:', error);
+    insets = { bottom: 0, top: 0, left: 0, right: 0 };
+  }
+  
+  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom || 0, 10) : 10;
+  const tabBarHeight = 70 + (Platform.OS === 'android' ? (insets.bottom || 0) : 0);
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -19,8 +32,8 @@ export const MainNavigator = () => {
           backgroundColor: '#1E293B',
           borderTopColor: '#334155',
           borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 10,
+          height: tabBarHeight,
+          paddingBottom: bottomPadding,
           paddingTop: 10,
         },
         tabBarActiveTintColor: '#8B5CF6',

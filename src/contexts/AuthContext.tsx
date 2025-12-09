@@ -2,7 +2,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile } from '@/types/database';
-import Toast from 'react-native-toast-message';
+import { analytics } from '@/lib/analytics';
+import { setSentryUser, clearSentryUser } from '@/lib/sentry';
+import { handleError } from '@/lib/errorHandler';
+import { showToast } from '@/lib/toast';
 
 interface AuthContextType {
   user: User | null;
@@ -28,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email);
       }
       setIsLoading(false);
     });
@@ -39,9 +42,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         } else {
           setProfile(null);
+          clearSentryUser();
         }
       }
     );
@@ -49,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -58,9 +62,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      if (data) {
+        setProfile(data as Profile);
+        // Identificar usuário no Sentry (só em produção)
+        const profile = data as Profile;
+        setSentryUser(userId, userEmail, profile.username || profile.name);
+      }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      handleError(error, {
+        title: 'Erro ao carregar perfil',
+        context: { userId, action: 'fetchProfile' },
+        showToast: false, // Não mostrar toast para erros silenciosos
+      });
     }
   };
 
@@ -79,30 +92,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        Toast.show({
-          type: 'error',
-          text1: 'Erro ao criar conta',
-          text2: error.message,
-        });
+        showToast('error', 'Erro ao criar conta', error.message);
         return false;
       }
 
       if (data.user) {
-        Toast.show({
-          type: 'success',
-          text1: 'Conta criada! 🎉',
-          text2: `Bem-vindo, ${name}!`,
-        });
+        // Track signup
+        analytics.identify(data.user.id, { email, name });
+        analytics.trackSignUp('email');
+        
+        showToast('success', 'Conta criada! 🎉', `Bem-vindo, ${name}!`);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('Error signing up:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Erro ao criar conta',
+      handleError(error, {
+        title: 'Erro ao criar conta',
+        context: { action: 'signup', email },
       });
       return false;
     } finally {
@@ -120,30 +127,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        Toast.show({
-          type: 'error',
-          text1: 'Erro ao fazer login',
-          text2: error.message,
-        });
+        showToast('error', 'Erro ao fazer login', error.message);
         return false;
       }
 
       if (data.user) {
-        Toast.show({
-          type: 'success',
-          text1: 'Bem-vindo de volta! 👋',
-          text2: profile?.name || email,
-        });
+        // Track login
+        analytics.identify(data.user.id, { email });
+        analytics.trackLogin('email');
+        
+        showToast('success', 'Bem-vindo de volta! 👋', profile?.name || email);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('Error logging in:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Erro ao fazer login',
+      handleError(error, {
+        title: 'Erro ao fazer login',
+        context: { action: 'login', email },
       });
       return false;
     } finally {
@@ -153,16 +154,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async (): Promise<void> => {
     try {
+      analytics.trackLogout();
+      clearSentryUser();
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
       setSession(null);
-      Toast.show({
-        type: 'info',
-        text1: 'Até logo! 👋',
-      });
+      showToast('info', 'Até logo! 👋');
     } catch (error) {
-      console.error('Error logging out:', error);
+      handleError(error, {
+        title: 'Erro ao fazer logout',
+        context: { action: 'logout' },
+        showToast: false, // Logout não precisa mostrar erro
+      });
     }
   };
 
