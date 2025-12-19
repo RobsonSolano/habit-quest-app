@@ -28,15 +28,15 @@ export const RootNavigator = () => {
   }
 
   try {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <Stack.Screen name="Main" component={MainNavigator} />
-        ) : (
-          <Stack.Screen name="Auth" component={AuthScreen} />
-        )}
-      </Stack.Navigator>
-    );
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {user ? (
+        <Stack.Screen name="Main" component={MainNavigator} />
+      ) : (
+        <Stack.Screen name="Auth" component={AuthScreen} />
+      )}
+    </Stack.Navigator>
+  );
   } catch (error) {
     logger.error('RootNavigator', 'Error rendering navigator', error);
     return (

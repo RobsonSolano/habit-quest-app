@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HabitQuest",
-    "slug": "habit-quest-rn",
+    "slug": "habitquest",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "habitquest",
@@ -22,6 +22,7 @@
         "backgroundColor": "#0F172A"
       },
       "package": "com.habitquest.app",
+      "versionCode": 1,
       "useNextNotificationsApi": true
     },
     "web": {
@@ -35,6 +36,12 @@
         }
       ],
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5f8512e9-3c15-4930-a007-bc68b97b45bd"
+      }
+    },
+    "owner": "solanusdev-organization"
   }
 }
