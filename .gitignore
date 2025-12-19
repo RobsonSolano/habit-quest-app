@@ -41,5 +41,9 @@ yarn-error.*
 /ios
 /android
 
+# Build artifacts
+*.aab
+*.apk
+
 docs/*
 /docs

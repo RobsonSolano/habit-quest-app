@@ -22,7 +22,7 @@ export const MainNavigator = () => {
   }
   
   const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom || 0, 10) : 10;
-  const tabBarHeight = 50 + (Platform.OS === 'android' ? (insets.bottom || 0) : 0);
+  const tabBarHeight = 65 + (Platform.OS === 'android' ? (insets.bottom || 0) : 0);
   
   return (
     <Tab.Navigator

@@ -20,7 +20,7 @@ export const HabitCard = React.memo(({ habit, onToggle }: HabitCardProps) => {
       return;
     }
     
-    setIsAnimating(true);
+      setIsAnimating(true);
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
@@ -34,10 +34,10 @@ export const HabitCard = React.memo(({ habit, onToggle }: HabitCardProps) => {
   const cardClassName = useMemo(() => {
     try {
       return cn(
-        'mb-3 border-2',
-        habit.completedToday
-          ? 'bg-primary border-primary'
-          : 'bg-card border-border'
+          'mb-3 border-2',
+          habit.completedToday
+            ? 'bg-primary border-primary'
+            : 'bg-card border-border'
       );
     } catch (error) {
       console.warn('[HabitCard] Error processing card className:', error);

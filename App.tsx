@@ -38,19 +38,19 @@ export default function App() {
   }, []);
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <QueryClientProvider client={queryClient}>
-            <NavigationContainer>
-              <AuthProvider>
-                <StatusBar style="light" />
-                <RootNavigator />
-                <Toast />
-              </AuthProvider>
-            </NavigationContainer>
-          </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer>
+          <AuthProvider>
+            <StatusBar style="light" />
+            <RootNavigator />
+            <Toast />
+          </AuthProvider>
+        </NavigationContainer>
+      </QueryClientProvider>
         </SafeAreaProvider>
-      </GestureHandlerRootView>
+    </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
