@@ -11,6 +11,7 @@ export type MainTabParamList = {
   Home: undefined;
   Stats: undefined;
   Friends: undefined;
+  Partnerships: undefined;
   Profile: { username?: string };
 };
 

@@ -117,6 +117,7 @@ const AuthScreen = () => {
                   label="Senha"
                   placeholder="••••••••"
                   secureTextEntry
+                  showPasswordToggle
                   value={loginPassword}
                   onChangeText={setLoginPassword}
                 />
@@ -129,9 +130,6 @@ const AuthScreen = () => {
                 >
                   Entrar
                 </Button>
-                <Text className="text-xs text-muted-foreground text-center mt-4">
-                  💡 Dica: Apenas para validação - use qualquer email/senha
-                </Text>
               </View>
             ) : (
               <View className="space-y-4">
@@ -155,6 +153,7 @@ const AuthScreen = () => {
                   label="Senha"
                   placeholder="••••••••"
                   secureTextEntry
+                  showPasswordToggle
                   className="mb-3"
                   value={signupPassword}
                   onChangeText={setSignupPassword}
