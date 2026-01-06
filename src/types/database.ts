@@ -185,6 +185,46 @@ export interface Database {
           updated_at?: string
         }
       }
+      streak_partnerships: {
+        Row: {
+          id: string
+          user1_id: string
+          user2_id: string
+          status: 'pending' | 'active' | 'completed' | 'cancelled'
+          target_days: number
+          current_streak: number
+          start_date: string | null
+          end_date: string | null
+          last_activity_date: string | null
+          reminder_enabled: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user1_id: string
+          user2_id: string
+          status?: 'pending' | 'active' | 'completed' | 'cancelled'
+          target_days?: number
+          current_streak?: number
+          start_date?: string | null
+          end_date?: string | null
+          last_activity_date?: string | null
+          reminder_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          status?: 'pending' | 'active' | 'completed' | 'cancelled'
+          target_days?: number
+          current_streak?: number
+          start_date?: string | null
+          end_date?: string | null
+          last_activity_date?: string | null
+          reminder_enabled?: boolean
+          updated_at?: string
+        }
+      }
     }
     Functions: {
       check_and_update_streak: {
@@ -230,6 +270,42 @@ export interface Database {
           total_points: number
           total_habits_completed: number
           member_since: string
+        }[]
+      }
+      check_partnership_progress: {
+        Args: {
+          p_partnership_id: string
+        }
+        Returns: {
+          both_completed: boolean
+          new_streak?: number
+          target_reached?: boolean
+          completed?: boolean
+          user1_completed?: boolean
+          user2_completed?: boolean
+          already_counted?: boolean
+          current_streak?: number
+          error?: string
+        }
+      }
+      get_user_partnerships: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          id: string
+          partner_id: string
+          partner_name: string
+          partner_username: string | null
+          partner_avatar_url: string | null
+          status: 'pending' | 'active' | 'completed' | 'cancelled'
+          target_days: number
+          current_streak: number
+          start_date: string | null
+          end_date: string | null
+          last_activity_date: string | null
+          reminder_enabled: boolean
+          is_user1: boolean
         }[]
       }
     }

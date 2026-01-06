@@ -6,6 +6,7 @@ import { analytics } from '@/lib/analytics';
 import { setSentryUser, clearSentryUser } from '@/lib/sentry';
 import { handleError } from '@/lib/errorHandler';
 import { showToast } from '@/lib/toast';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -26,19 +27,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email);
+    let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    // Timeout de segurança (5 segundos)
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        logger.warn('AuthContext', 'getSession timeout - forcing loading to false');
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    }, 5000);
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (!mounted) return;
+        
+        clearTimeout(timeoutId);
+        
+        if (error) {
+          logger.error('AuthContext', 'Error getting session', error);
+          setIsLoading(false);
+          return;
+        }
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id, session.user.email).finally(() => {
+            if (mounted) setIsLoading(false);
+          });
+        } else {
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        
+        clearTimeout(timeoutId);
+        logger.error('AuthContext', 'getSession failed', error);
+        setIsLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -50,7 +85,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {

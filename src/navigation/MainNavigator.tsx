@@ -1,18 +1,21 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, BarChart3, Users, User } from 'lucide-react-native';
+import { Home, BarChart3, Users, User, Flame } from 'lucide-react-native';
 import { MainTabParamList } from './types';
 
 import IndexScreen from '@/screens/IndexScreen';
 import StatsScreen from '@/screens/StatsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import FriendsScreen from '@/screens/FriendsScreen';
+import PartnershipsScreen from '@/screens/PartnershipsScreen';
+import { usePartnershipsBadge } from '@/hooks/usePartnershipsBadge';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainNavigator = () => {
+  const pendingPartnerships = usePartnershipsBadge();
   let insets;
   try {
     insets = useSafeAreaInsets();
@@ -66,6 +69,46 @@ export const MainNavigator = () => {
         options={{
           tabBarLabel: 'Amigos',
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen 
+        name="Partnerships" 
+        component={PartnershipsScreen}
+        options={{
+          tabBarLabel: 'Parcerias',
+          tabBarIcon: ({ color, size }) => (
+            <View style={{ position: 'relative' }}>
+              <Flame size={size} color={color} />
+              {pendingPartnerships > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -8,
+                    top: -4,
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 10,
+                    minWidth: 20,
+                    height: 20,
+                    paddingHorizontal: 6,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 2,
+                    borderColor: '#1E293B',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: 'white',
+                      fontSize: 11,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {pendingPartnerships > 99 ? '+99' : pendingPartnerships}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
         }}
       />
       <Tab.Screen 

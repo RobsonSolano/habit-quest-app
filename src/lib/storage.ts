@@ -712,6 +712,264 @@ export const friendService = {
 };
 
 // =============================================
+// STREAK PARTNERSHIPS (Parcerias de Ofensiva)
+// =============================================
+export interface StreakPartnership {
+  id: string;
+  user1_id: string;
+  user2_id: string;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  target_days: number;
+  current_streak: number;
+  start_date: string | null;
+  end_date: string | null;
+  last_activity_date: string | null;
+  reminder_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PartnershipWithPartner {
+  id: string;
+  partner_id: string;
+  partner_name: string;
+  partner_username: string | null;
+  partner_avatar_url: string | null;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  target_days: number;
+  current_streak: number;
+  start_date: string | null;
+  end_date: string | null;
+  last_activity_date: string | null;
+  reminder_enabled: boolean;
+  is_user1: boolean;
+}
+
+export const partnershipService = {
+  /**
+   * Criar convite de parceria
+   */
+  async createInvite(userId: string, friendId: string, targetDays: number = 7): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Verificar se já existe parceria ativa ou pendente com essa pessoa
+      const existing = await this.getPartnershipBetweenUsers(userId, friendId);
+      if (existing && (existing.status === 'pending' || existing.status === 'active')) {
+        return { 
+          success: false, 
+          error: 'Você já tem uma parceria ativa ou pendente com esta pessoa' 
+        };
+      }
+
+      // Verificar se são amigos
+      const { data: friendship } = await supabase
+        .from('friendships')
+        .select('*')
+        .or(`and(requester_id.eq.${userId},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${userId})`)
+        .eq('status', 'accepted')
+        .single();
+
+      if (!friendship) {
+        return { 
+          success: false, 
+          error: 'Você precisa ser amigo desta pessoa para criar uma parceria' 
+        };
+      }
+
+      // Criar parceria
+      const { error } = await supabase
+        .from('streak_partnerships')
+        // @ts-ignore
+        .insert({
+          user1_id: userId,
+          user2_id: friendId,
+          status: 'pending',
+          target_days: targetDays,
+        });
+
+      if (error) {
+        console.error('Error creating partnership:', error);
+        return { 
+          success: false, 
+          error: 'Erro ao criar parceria. Tente novamente.' 
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error creating partnership invite:', error);
+      return { 
+        success: false, 
+        error: 'Erro ao criar parceria. Tente novamente.' 
+      };
+    }
+  },
+
+  /**
+   * Aceitar convite de parceria
+   */
+  async acceptInvite(partnershipId: string, userId: string): Promise<boolean> {
+    try {
+      const { data: partnership, error: fetchError } = await supabase
+        .from('streak_partnerships')
+        .select('*')
+        .eq('id', partnershipId)
+        .eq('status', 'pending')
+        .single();
+
+      if (fetchError || !partnership) {
+        console.error('Partnership not found or not pending');
+        return false;
+      }
+
+      // Verificar se o usuário é o destinatário
+      if (partnership.user2_id !== userId) {
+        console.error('User is not the addressee');
+        return false;
+      }
+
+      // Ativar parceria
+      const { error } = await supabase
+        .from('streak_partnerships')
+        // @ts-ignore
+        .update({
+          status: 'active',
+          start_date: new Date().toISOString().split('T')[0],
+        })
+        .eq('id', partnershipId);
+
+      if (error) {
+        console.error('Error accepting partnership:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error accepting partnership invite:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Rejeitar ou cancelar parceria
+   */
+  async cancelPartnership(partnershipId: string, userId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('streak_partnerships')
+        // @ts-ignore
+        .update({ status: 'cancelled' })
+        .eq('id', partnershipId)
+        .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+
+      if (error) {
+        console.error('Error cancelling partnership:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error cancelling partnership:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Obter parcerias do usuário
+   */
+  async getUserPartnerships(userId: string): Promise<PartnershipWithPartner[]> {
+    try {
+      const { data, error } = await supabase
+        // @ts-ignore
+        .rpc('get_user_partnerships', { p_user_id: userId });
+
+      if (error) {
+        console.error('Error fetching partnerships:', error);
+        return [];
+      }
+
+      return (data || []) as PartnershipWithPartner[];
+    } catch (error) {
+      console.error('Error fetching partnerships:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Obter parceria entre dois usuários
+   */
+  async getPartnershipBetweenUsers(userId1: string, userId2: string): Promise<StreakPartnership | null> {
+    try {
+      const { data, error } = await supabase
+        .from('streak_partnerships')
+        .select('*')
+        .or(`and(user1_id.eq.${userId1},user2_id.eq.${userId2}),and(user1_id.eq.${userId2},user2_id.eq.${userId1})`)
+        .in('status', ['pending', 'active'])
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return data as StreakPartnership;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  /**
+   * Verificar progresso da parceria (chamado quando usuário completa hábitos)
+   */
+  async checkPartnershipProgress(partnershipId: string): Promise<{
+    both_completed: boolean;
+    new_streak?: number;
+    target_reached?: boolean;
+    completed?: boolean;
+    user1_completed?: boolean;
+    user2_completed?: boolean;
+  } | null> {
+    try {
+      const { data, error } = await supabase
+        // @ts-ignore
+        .rpc('check_partnership_progress', { p_partnership_id: partnershipId });
+
+      if (error) {
+        console.error('Error checking partnership progress:', error);
+        return null;
+      }
+
+      return data as any;
+    } catch (error) {
+      console.error('Error checking partnership progress:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Atualizar configurações de lembrete
+   */
+  async updateReminderSettings(partnershipId: string, userId: string, enabled: boolean): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('streak_partnerships')
+        // @ts-ignore
+        .update({ reminder_enabled: enabled })
+        .eq('id', partnershipId)
+        .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+
+      if (error) {
+        console.error('Error updating reminder settings:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating reminder settings:', error);
+      return false;
+    }
+  },
+};
+
+// =============================================
 // PROFILE
 // =============================================
 export const profileService = {

@@ -27,11 +27,13 @@ import {
   achievementService,
   streakService,
   friendService,
+  partnershipService,
 } from '@/lib/storage';
 import { Card } from '@/components/ui/Card';
 import { analytics } from '@/lib/analytics';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/lib/toast';
+import { adsService } from '@/lib/ads';
 
 const IndexScreen = () => {
   const { user, profile, logout } = useAuth();
@@ -265,6 +267,27 @@ const IndexScreen = () => {
         analytics.trackAllHabitsCompleted();
         // Cancelar lembretes de ofensiva (já completou tudo!)
         onHabitCompleted();
+        // Mostrar anúncio de dia perfeito
+        adsService.showPerfectDayAd();
+        
+        // Verificar progresso em parcerias de ofensiva
+        try {
+          const partnerships = await partnershipService.getUserPartnerships(user.id);
+          const activePartnerships = partnerships.filter(p => p.status === 'active');
+          
+          for (const partnership of activePartnerships) {
+            const progress = await partnershipService.checkPartnershipProgress(partnership.id);
+            if (progress?.both_completed && progress.new_streak) {
+              if (progress.target_reached) {
+                showToast('success', '🎉 Parceria Concluída!', `Vocês completaram ${progress.new_streak} dias juntos!`);
+              } else {
+                showToast('success', '🔥 Parceiro completou!', `${partnership.partner_name} também completou hoje!`);
+              }
+            }
+          }
+        } catch (error) {
+          logger.error('IndexScreen', 'Error checking partnership progress', error);
+        }
       }
       
       // SEMPRE verificar e atualizar ofensiva quando um hábito é completado

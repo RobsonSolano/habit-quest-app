@@ -12,6 +12,7 @@ import { analytics } from './src/lib/analytics';
 import { initSentry } from './src/lib/sentry';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { logger } from './src/lib/logger';
+import { adsService } from './src/lib/ads';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,11 @@ export default function App() {
         analytics.trackAppOpen();
       }).catch(err => {
         console.warn('Analytics init failed:', err);
+      });
+      
+      // Inicializar anúncios
+      adsService.init().catch(err => {
+        console.warn('Ads init failed:', err);
       });
       
       logger.log('App', 'App initialized');
