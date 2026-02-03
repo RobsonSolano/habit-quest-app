@@ -1,9 +1,13 @@
 import { registerRootComponent } from 'expo';
 import 'react-native-screens';
+import * as Sentry from '@sentry/react-native';
 
+import { initSentry } from './src/lib/sentry';
 import App from './App';
 
+// Inicializar Sentry o mais cedo possível (antes de qualquer componente)
+initSentry();
+
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+// Sentry.wrap captura erros não tratados no React e envia ao Sentry
+registerRootComponent(Sentry.wrap(App));

@@ -1,20 +1,22 @@
 import * as Sentry from '@sentry/react-native';
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
+const ENABLED_IN_DEV = process.env.EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV === 'true';
 
 /**
- * Inicializa Sentry APENAS em produção
- * Em desenvolvimento, não faz nada (evita logs desnecessários)
+ * Inicializa Sentry.
+ * Em desenvolvimento fica desligado por padrão (use EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV=true para testar).
  */
 export const initSentry = () => {
-  // Em desenvolvimento, não inicializar Sentry
-  if (__DEV__) {
-    console.log('[Sentry] Disabled in development mode');
+  if (!SENTRY_DSN) {
+    if (!__DEV__) {
+      console.warn('Sentry DSN not configured. Error tracking disabled.');
+    }
     return;
   }
 
-  if (!SENTRY_DSN) {
-    console.warn('Sentry DSN not configured. Error tracking disabled.');
+  if (__DEV__ && !ENABLED_IN_DEV) {
+    console.log('[Sentry] Disabled in development (set EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV=true to test)');
     return;
   }
 
@@ -24,8 +26,8 @@ export const initSentry = () => {
     // Performance Monitoring (100% das transações em produção)
     tracesSampleRate: 1.0,
     
-    // Ambiente
-    environment: 'production',
+    // Ambiente (dev quando EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV=true)
+    environment: __DEV__ ? 'development' : 'production',
     
     // Ignorar erros comuns que não são bugs
     ignoreErrors: [
@@ -44,7 +46,7 @@ export const initSentry = () => {
 
 // Identificar usuário (só funciona se Sentry estiver inicializado)
 export const setSentryUser = (userId: string, email?: string, username?: string) => {
-  if (__DEV__) return; // Não fazer nada em dev
+  if (__DEV__ && !ENABLED_IN_DEV) return;
   
   Sentry.setUser({
     id: userId,
@@ -55,15 +57,14 @@ export const setSentryUser = (userId: string, email?: string, username?: string)
 
 // Limpar usuário (logout)
 export const clearSentryUser = () => {
-  if (__DEV__) return; // Não fazer nada em dev
+  if (__DEV__ && !ENABLED_IN_DEV) return;
   
   Sentry.setUser(null);
 };
 
-// Capturar erro manualmente (só funciona em produção)
+// Capturar erro manualmente
 export const captureError = (error: Error, context?: Record<string, any>) => {
-  if (__DEV__) {
-    // Em dev, só logar no console
+  if (__DEV__ && !ENABLED_IN_DEV) {
     console.log('[Sentry] Would capture:', error.message, context);
     return;
   }
@@ -78,7 +79,7 @@ export const captureError = (error: Error, context?: Record<string, any>) => {
 
 // Adicionar breadcrumb (contexto do que aconteceu antes do erro)
 export const addBreadcrumb = (message: string, category: string, data?: Record<string, any>) => {
-  if (__DEV__) return; // Não fazer nada em dev
+  if (__DEV__ && !ENABLED_IN_DEV) return;
   
   Sentry.addBreadcrumb({
     message,
@@ -90,7 +91,7 @@ export const addBreadcrumb = (message: string, category: string, data?: Record<s
 
 // Capturar mensagem (não é erro, mas informação importante)
 export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'info') => {
-  if (__DEV__) {
+  if (__DEV__ && !ENABLED_IN_DEV) {
     console.log('[Sentry] Would capture message:', message);
     return;
   }
@@ -100,8 +101,18 @@ export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'i
 
 // Adicionar contexto adicional
 export const setContext = (key: string, context: Record<string, any>) => {
-  if (__DEV__) return; // Não fazer nada em dev
+  if (__DEV__ && !ENABLED_IN_DEV) return;
   
   Sentry.setContext(key, context);
+};
+
+/**
+ * Envia um evento de teste ao Sentry (só em dev com ENABLED_IN_DEV).
+ * Use para validar se o projeto está recebendo eventos.
+ */
+export const sendTestEvent = () => {
+  if (!SENTRY_DSN || (__DEV__ && !ENABLED_IN_DEV)) return;
+  Sentry.captureMessage('[HabitQuest] Teste de envio - desenvolvimento', 'info');
+  Sentry.captureException(new Error('[HabitQuest] Teste de exception - desenvolvimento'));
 };
 

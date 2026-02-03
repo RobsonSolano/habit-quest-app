@@ -50,6 +50,7 @@ npm start
 
 | Doc | Descrição |
 |-----|-----------|
+| [MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md) | **Plano de migração** - React Web → React Native, status e pendências |
 | [SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | **Guia rápido** - Configurar e rodar o app |
 | [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) | **Supabase detalhado** - Criar projeto, schema, RLS, troubleshooting |
 | [GOOGLE_SIGNIN.md](docs/GOOGLE_SIGNIN.md) | Login com Google |

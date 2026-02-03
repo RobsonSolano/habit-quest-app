@@ -33,6 +33,14 @@
     },
     "plugins": [
       [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "solanusdev",
+          "project": "react-native"
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#8B5CF6"

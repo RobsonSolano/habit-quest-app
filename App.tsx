@@ -9,10 +9,10 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { analytics } from './src/lib/analytics';
-import { initSentry } from './src/lib/sentry';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { logger } from './src/lib/logger';
 import { adsService } from './src/lib/ads';
+import { sendTestEvent } from './src/lib/sentry';
 
 const queryClient = new QueryClient();
 
@@ -21,9 +21,6 @@ export default function App() {
     try {
       // Inicializar logger PRIMEIRO
       logger.init().catch(err => console.warn('Logger init failed:', err));
-      
-      // Inicializar Sentry (para capturar erros desde o início)
-      initSentry();
       
       // Inicializar analytics
       analytics.init().then(() => {
@@ -38,6 +35,15 @@ export default function App() {
       });
       
       logger.log('App', 'App initialized');
+
+      // Envio de teste ao Sentry em dev (EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV=true)
+      if (__DEV__ && process.env.EXPO_PUBLIC_SENTRY_ENABLED_IN_DEV === 'true' && process.env.EXPO_PUBLIC_SENTRY_DSN) {
+        const timer = setTimeout(() => {
+          sendTestEvent();
+          console.log('[Sentry] Test event sent. Check your Sentry project in a few seconds.');
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
     } catch (error) {
       console.error('Error initializing app:', error);
     }
