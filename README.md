@@ -92,6 +92,17 @@ src/
 - Cada usuário só acessa seus próprios dados
 - Autenticação via Supabase Auth
 
+## 📦 Build APK + QR Code (preview / internal)
+
+Gera um APK e, ao concluir, o EAS mostra o link da build com **QR code para baixar** no celular:
+
+```bash
+npx eas-cli build -p android --profile preview
+# ou: npm run build:preview
+```
+
+Quando o build terminar com sucesso, abra o link exibido no terminal (ex.: `https://expo.dev/accounts/.../builds/...`) — lá estão o **QR code** e o botão de download do APK.
+
 ## 📦 Build para Play Store
 
 ```bash
