@@ -30,23 +30,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
     let timeoutId: ReturnType<typeof setTimeout>;
 
-    // Timeout de segurança (5 segundos)
+    // Timeout de segurança (10 segundos) — cobre getSession + fetchProfile
+    // O clearTimeout só ocorre após fetchProfile completar, não antes
     timeoutId = setTimeout(() => {
       if (mounted) {
-        logger.warn('AuthContext', 'getSession timeout - forcing loading to false');
+        logger.warn('AuthContext', 'Auth init timeout - forcing loading to false');
         setIsLoading(false);
       }
-    }, 5000);
+    }, 10000);
 
     // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (!mounted) return;
-        
-        clearTimeout(timeoutId);
-        
+
         if (error) {
           logger.error('AuthContext', 'Error getting session', error);
+          clearTimeout(timeoutId);
           setIsLoading(false);
           return;
         }
@@ -55,15 +55,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchProfile(session.user.id, session.user.email).finally(() => {
-            if (mounted) setIsLoading(false);
+            if (mounted) {
+              clearTimeout(timeoutId);
+              setIsLoading(false);
+            }
           });
         } else {
+          clearTimeout(timeoutId);
           setIsLoading(false);
         }
       })
       .catch((error) => {
         if (!mounted) return;
-        
+
         clearTimeout(timeoutId);
         logger.error('AuthContext', 'getSession failed', error);
         setIsLoading(false);
